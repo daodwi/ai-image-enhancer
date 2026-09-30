@@ -16,7 +16,7 @@
         <h1>✨ AI Image Enhancer</h1>
 
         <p class="subtitle">
-            Enhance and upscale your images
+            Enhance and upscale your images with AI
         </p>
 
         <div class="upload-box">
@@ -33,8 +33,22 @@
 
         </div>
 
+        <div id="status">
+            Select an image to begin.
+        </div>
+
         <div class="preview">
-            <img id="previewImage" alt="Image Preview">
+
+            <div class="preview-box">
+                <h3>Original</h3>
+                <img id="previewImage" alt="Original image">
+            </div>
+
+            <div class="preview-box">
+                <h3>Enhanced</h3>
+                <img id="resultImage" alt="Enhanced image">
+            </div>
+
         </div>
 
         <div class="controls">
@@ -74,19 +88,27 @@
 
         </div>
 
-        <button id="enhanceBtn">
-            ✨ Enhance Image
-        </button>
+        <div class="buttons">
 
-        <button id="downloadBtn">
-            ⬇️ Download
-        </button>
+            <button id="aiBtn">
+                🤖 AI 2× Upscale
+            </button>
+
+            <button id="enhanceBtn">
+                ✨ Enhance
+            </button>
+
+            <button id="downloadBtn">
+                ⬇️ Download
+            </button>
+
+        </div>
 
         <canvas id="canvas"></canvas>
 
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 
 </body>
 </html>

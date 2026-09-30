@@ -1,1 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>AI Image Enhancer</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>✨ AI Image Enhancer</h1>
+
+        <p class="subtitle">
+            Enhance and upscale your images
+        </p>
+
+        <div class="upload-box">
+
+            <input
+                type="file"
+                id="imageInput"
+                accept="image/*"
+            >
+
+            <label for="imageInput">
+                🖼️ Choose an Image
+            </label>
+
+        </div>
+
+        <div class="preview">
+            <img id="previewImage" alt="Image Preview">
+        </div>
+
+        <div class="controls">
+
+            <label>
+                Brightness
+                <input
+                    type="range"
+                    id="brightness"
+                    min="50"
+                    max="150"
+                    value="100"
+                >
+            </label>
+
+            <label>
+                Contrast
+                <input
+                    type="range"
+                    id="contrast"
+                    min="50"
+                    max="150"
+                    value="100"
+                >
+            </label>
+
+            <label>
+                Saturation
+                <input
+                    type="range"
+                    id="saturation"
+                    min="50"
+                    max="150"
+                    value="100"
+                >
+            </label>
+
+        </div>
+
+        <button id="enhanceBtn">
+            ✨ Enhance Image
+        </button>
+
+        <button id="downloadBtn">
+            ⬇️ Download
+        </button>
+
+        <canvas id="canvas"></canvas>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

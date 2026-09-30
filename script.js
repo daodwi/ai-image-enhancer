@@ -1,54 +1,32 @@
-import { pipeline } from
-    "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
+import {
+    pipeline,
+    RawImage
+} from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1";
 
+const imageInput = document.getElementById("imageInput");
+const previewImage = document.getElementById("previewImage");
+const resultImage = document.getElementById("resultImage");
 
-const imageInput =
-    document.getElementById("imageInput");
+const brightness = document.getElementById("brightness");
+const contrast = document.getElementById("contrast");
+const saturation = document.getElementById("saturation");
 
-const previewImage =
-    document.getElementById("previewImage");
+const aiBtn = document.getElementById("aiBtn");
+const enhanceBtn = document.getElementById("enhanceBtn");
+const downloadBtn = document.getElementById("downloadBtn");
 
-const resultImage =
-    document.getElementById("resultImage");
+const status = document.getElementById("status");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-const brightness =
-    document.getElementById("brightness");
-
-const contrast =
-    document.getElementById("contrast");
-
-const saturation =
-    document.getElementById("saturation");
-
-const aiBtn =
-    document.getElementById("aiBtn");
-
-const enhanceBtn =
-    document.getElementById("enhanceBtn");
-
-const downloadBtn =
-    document.getElementById("downloadBtn");
-
-const status =
-    document.getElementById("status");
-
-const canvas =
-    document.getElementById("canvas");
-
-const ctx =
-    canvas.getContext("2d");
-
-
-let originalImage = new Image();
-
+let originalImage = null;
 let enhancedBlob = null;
-
 let upscaler = null;
 
 
-// -----------------------------
+// ==============================
 // IMAGE UPLOAD
-// -----------------------------
+// ==============================
 
 imageInput.addEventListener("change", function () {
 
@@ -57,49 +35,41 @@ imageInput.addEventListener("change", function () {
     if (!file) return;
 
     enhancedBlob = null;
-
     resultImage.style.display = "none";
 
-    status.textContent =
-        "Loading image...";
+    status.textContent = "Loading image...";
 
-    const reader =
-        new FileReader();
+    const reader = new FileReader();
 
     reader.onload = function (event) {
 
+        originalImage = new Image();
+
         originalImage.onload = function () {
 
-            previewImage.src =
-                event.target.result;
-
-            previewImage.style.display =
-                "block";
+            previewImage.src = event.target.result;
+            previewImage.style.display = "block";
 
             status.textContent =
                 `Image loaded: ${originalImage.width} × ${originalImage.height}`;
 
             updatePreview();
-
         };
 
-        originalImage.src =
-            event.target.result;
+        originalImage.src = event.target.result;
     };
 
     reader.readAsDataURL(file);
 });
 
 
-// -----------------------------
-// FILTER PREVIEW
-// -----------------------------
+// ==============================
+// LIVE FILTER PREVIEW
+// ==============================
 
 function updatePreview() {
 
-    if (!originalImage.src) {
-        return;
-    }
+    if (!originalImage) return;
 
     previewImage.style.filter =
         `
@@ -109,80 +79,63 @@ function updatePreview() {
         `;
 }
 
-
-brightness.addEventListener(
-    "input",
-    updatePreview
-);
-
-contrast.addEventListener(
-    "input",
-    updatePreview
-);
-
-saturation.addEventListener(
-    "input",
-    updatePreview
-);
+brightness.addEventListener("input", updatePreview);
+contrast.addEventListener("input", updatePreview);
+saturation.addEventListener("input", updatePreview);
 
 
-// -----------------------------
+// ==============================
 // NORMAL ENHANCE
-// -----------------------------
+// ==============================
 
-enhanceBtn.addEventListener(
-    "click",
-    function () {
+enhanceBtn.addEventListener("click", function () {
 
-        if (!originalImage.src) {
+    if (!originalImage) {
 
-            alert(
-                "Please choose an image first."
-            );
+        alert("Please choose an image first.");
 
-            return;
-        }
+        return;
+    }
 
-        canvas.width =
-            originalImage.width;
+    canvas.width = originalImage.naturalWidth;
+    canvas.height = originalImage.naturalHeight;
 
-        canvas.height =
-            originalImage.height;
+    ctx.filter =
+        `
+        brightness(${brightness.value}%)
+        contrast(${contrast.value}%)
+        saturate(${saturation.value}%)
+        `;
 
-        ctx.filter =
-            `
-            brightness(${brightness.value}%)
-            contrast(${contrast.value}%)
-            saturate(${saturation.value}%)
-            `;
+    ctx.drawImage(
+        originalImage,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
-        ctx.drawImage(
-            originalImage,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
+    ctx.filter = "none";
 
-        ctx.filter = "none";
+    canvas.toBlob(function (blob) {
+
+        enhancedBlob = blob;
 
         resultImage.src =
-            canvas.toDataURL("image/png");
+            URL.createObjectURL(blob);
 
-        resultImage.style.display =
-            "block";
-
-        enhancedBlob = null;
+        resultImage.style.display = "block";
 
         status.textContent =
-            "Image enhanced successfully.";
-    }
-);
+            "✨ Image enhanced successfully.";
+
+    }, "image/png");
+});
 
 
-// -----------------------------
+// ==============================
 // LOAD AI MODEL
-// -----------------------------
+// ==============================
 
 async function loadAIModel() {
 
@@ -191,7 +144,7 @@ async function loadAIModel() {
     }
 
     status.textContent =
-        "🤖 Loading AI model... First time may take a while.";
+        "🤖 Loading AI model...";
 
     aiBtn.disabled = true;
 
@@ -209,14 +162,13 @@ async function loadAIModel() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "AI MODEL ERROR:",
+            error
+        );
 
         status.textContent =
-            "❌ AI model could not be loaded.";
-
-        alert(
-            "AI model loading failed. Check your internet connection and browser console."
-        );
+            "❌ Could not load AI model.";
 
         throw error;
 
@@ -227,222 +179,237 @@ async function loadAIModel() {
 }
 
 
-// -----------------------------
-// AI UPSCALE
-// -----------------------------
+// ==============================
+// AI 2× UPSCALE
+// ==============================
 
-aiBtn.addEventListener(
-    "click",
-    async function () {
+aiBtn.addEventListener("click", async function () {
 
-        if (!originalImage.src) {
+    if (!originalImage) {
 
-            alert(
-                "Please choose an image first."
-            );
+        alert("Please choose an image first.");
 
-            return;
-        }
+        return;
+    }
 
-        aiBtn.disabled = true;
+    aiBtn.disabled = true;
+    enhanceBtn.disabled = true;
+    downloadBtn.disabled = true;
 
-        enhanceBtn.disabled = true;
-
-        downloadBtn.disabled = true;
+    try {
 
         status.textContent =
-            "🤖 AI is processing your image...";
+            "🤖 Preparing image...";
 
-        try {
+        /*
+         * Convert the browser image into
+         * Transformers.js RawImage.
+         */
 
-            const model =
-                await loadAIModel();
+        const inputCanvas =
+            document.createElement("canvas");
 
-            status.textContent =
-                "🤖 Upscaling image... Please wait.";
+        inputCanvas.width =
+            originalImage.naturalWidth;
 
-            const output =
-                await model(originalImage);
+        inputCanvas.height =
+            originalImage.naturalHeight;
 
-            /*
-             * Transformers.js returns a RawImage.
-             * Convert its RGB pixel data to a canvas.
-             */
+        const inputCtx =
+            inputCanvas.getContext("2d");
 
-            const width =
-                output.width;
+        inputCtx.drawImage(
+            originalImage,
+            0,
+            0
+        );
 
-            const height =
-                output.height;
-
-            const imageData =
-                new ImageData(
-                    new Uint8ClampedArray(
-                        output.data
-                    ),
-                    width,
-                    height
-                );
-
-            canvas.width =
-                width;
-
-            canvas.height =
-                height;
-
-            ctx.putImageData(
-                imageData,
-                0,
-                0
+        const inputImage =
+            RawImage.fromCanvas(
+                inputCanvas
             );
 
-            /*
-             * Apply the user's enhancement
-             * settings after AI upscaling.
-             */
+        status.textContent =
+            "🤖 Loading AI model...";
 
-            const finalCanvas =
-                document.createElement("canvas");
+        const model =
+            await loadAIModel();
 
-            finalCanvas.width =
-                width;
+        status.textContent =
+            "🤖 AI is processing the image...";
 
-            finalCanvas.height =
-                height;
+        /*
+         * Run Swin2SR.
+         */
 
-            const finalCtx =
-                finalCanvas.getContext("2d");
+        const output =
+            await model(inputImage);
 
-            finalCtx.filter =
-                `
-                brightness(${brightness.value}%)
-                contrast(${contrast.value}%)
-                saturate(${saturation.value}%)
-                `;
+        console.log(
+            "AI output:",
+            output
+        );
 
-            finalCtx.drawImage(
-                canvas,
-                0,
-                0
+        /*
+         * The pipeline returns a RawImage.
+         * Convert it to RGB for canvas rendering.
+         */
+
+        const outputImage =
+            output.rgb();
+
+        const width =
+            outputImage.width;
+
+        const height =
+            outputImage.height;
+
+        /*
+         * Create output canvas.
+         */
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const imageData =
+            new ImageData(
+                new Uint8ClampedArray(
+                    outputImage.data
+                ),
+                width,
+                height
             );
 
-            finalCtx.filter = "none";
+        ctx.putImageData(
+            imageData,
+            0,
+            0
+        );
 
-            finalCanvas.toBlob(
-                function (blob) {
+        /*
+         * Apply brightness,
+         * contrast and saturation.
+         */
 
-                    if (!blob) {
+        const finalCanvas =
+            document.createElement("canvas");
 
-                        throw new Error(
-                            "Could not create image."
-                        );
-                    }
+        finalCanvas.width =
+            width;
 
-                    enhancedBlob =
-                        blob;
+        finalCanvas.height =
+            height;
 
-                    resultImage.src =
-                        URL.createObjectURL(blob);
+        const finalCtx =
+            finalCanvas.getContext("2d");
 
-                    resultImage.style.display =
-                        "block";
+        finalCtx.filter =
+            `
+            brightness(${brightness.value}%)
+            contrast(${contrast.value}%)
+            saturate(${saturation.value}%)
+            `;
 
-                    status.textContent =
-                        `✅ AI upscale complete: ${width} × ${height}`;
+        finalCtx.drawImage(
+            canvas,
+            0,
+            0
+        );
 
-                    downloadBtn.disabled =
-                        false;
-                },
-                "image/png"
-            );
+        finalCtx.filter = "none";
 
-        } catch (error) {
+        /*
+         * Convert final image to PNG.
+         */
 
-            console.error(error);
+        finalCanvas.toBlob(
+            function (blob) {
 
-            status.textContent =
-                "❌ AI processing failed.";
+                if (!blob) {
 
-            alert(
-                "AI processing failed. Try a smaller image."
-            );
-
-        } finally {
-
-            aiBtn.disabled =
-                false;
-
-            enhanceBtn.disabled =
-                false;
-
-            downloadBtn.disabled =
-                false;
-        }
-    }
-);
-
-
-// -----------------------------
-// DOWNLOAD
-// -----------------------------
-
-downloadBtn.addEventListener(
-    "click",
-    function () {
-
-        if (enhancedBlob) {
-
-            const url =
-                URL.createObjectURL(
-                    enhancedBlob
-                );
-
-            const link =
-                document.createElement("a");
-
-            link.href = url;
-
-            link.download =
-                "ai-enhanced-image.png";
-
-            link.click();
-
-            setTimeout(
-                function () {
-
-                    URL.revokeObjectURL(
-                        url
+                    throw new Error(
+                        "Could not create output image."
                     );
+                }
 
-                },
-                1000
-            );
+                enhancedBlob = blob;
 
-            return;
-        }
+                resultImage.src =
+                    URL.createObjectURL(blob);
 
+                resultImage.style.display =
+                    "block";
 
-        if (!canvas.width) {
+                status.textContent =
+                    `✅ AI 2× upscale complete: ${width} × ${height}`;
 
-            alert(
-                "Please enhance an image first."
-            );
+                downloadBtn.disabled =
+                    false;
 
-            return;
-        }
+            },
+            "image/png"
+        );
 
+    } catch (error) {
 
-        const link =
-            document.createElement("a");
+        console.error(
+            "AI PROCESSING ERROR:",
+            error
+        );
 
-        link.download =
-            "enhanced-image.png";
+        status.textContent =
+            "❌ AI processing failed.";
 
-        link.href =
-            canvas.toDataURL(
-                "image/png"
-            );
+        alert(
+            "AI processing failed. Open the browser console to see the exact error."
+        );
 
-        link.click();
+    } finally {
+
+        aiBtn.disabled = false;
+        enhanceBtn.disabled = false;
+        downloadBtn.disabled = false;
     }
-);
+});
+
+
+// ==============================
+// DOWNLOAD
+// ==============================
+
+downloadBtn.addEventListener("click", function () {
+
+    if (!enhancedBlob) {
+
+        alert(
+            "Please enhance or upscale an image first."
+        );
+
+        return;
+    }
+
+    const url =
+        URL.createObjectURL(
+            enhancedBlob
+        );
+
+    const link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "ai-enhanced-image.png";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    setTimeout(function () {
+
+        URL.revokeObjectURL(url);
+
+    }, 1000);
+});
